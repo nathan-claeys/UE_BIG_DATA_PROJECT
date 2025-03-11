@@ -1,5 +1,17 @@
 # UE_BIG_DATA_PROJECT
 
+# Nos requêtes : 
+
+## Batch :
+
+- Temps moyen d'attente entre l'arrivée d'un train et le prochain tram par heure sur une journée => Nathan
+- Affluence de bus pour une ligne par heure sur une journée => Clément
+
+## Stream : 
+
+- Pour une ligne, les temps d'attente à chaque arrêt => Antoine
+- Pour une zone géographique, disponibilité dans des stations vélo / le nombre de places totales (par ex: 3 sur 4) => JB
+
 # Projet
 
 L'objectif principal de ce projet est de permettre aux étudiants de développer des compétences pratiques dans la gestion et l'analyse de données massives. En choisissant une source de données parmi celles proposées, les étudiants - en groupe de 4 - devront mettre en oeuvre un pipeline complet, allant de la collecte à l’analyse et à la visualisation des résultats.
