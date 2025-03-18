@@ -23,7 +23,9 @@ def get_stops_of_line(line_name):
     for stop in get_stops_information():
         for ligne in stop["ligne"]:
             if ligne["numLigne"] == line_name:
-                stops.append({"codeLieu": stop["codeLieu"], "libelle": stop["libelle"]})
+                stops.append(
+                    {"codeLieu": stop["codeLieu"], "libelle": stop["libelle"]}
+                )
                 break
 
     return stops
@@ -44,7 +46,11 @@ def send_bus_position(line_name):
 
     for stop in get_stops_of_line(line_name):
 
-        url = f"https://open.tan.fr/ewp/tempsattentelieu.json/{stop['codeLieu']}/1/{line_name}"
+        url = (
+            "https://open.tan.fr/ewp/tempsattentelieu.json/"
+            f"{stop['codeLieu']}/"
+            f"1/{line_name}"
+        )
 
         response = requests.get(url)
 
@@ -77,7 +83,10 @@ def run_periodic(interval_sec, stop_event, task, task_args=()):
 
 if __name__ == "__main__":
 
-    create_topic_if_not_exists(kafka_config["bootstrap_servers"], "bus_position")
+    create_topic_if_not_exists(
+        kafka_config["bootstrap_servers"],
+        "bus_position",
+    )
 
     stop_event = threading.Event()
 
