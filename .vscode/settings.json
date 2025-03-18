@@ -1,6 +1,12 @@
 {
-    "[python]": {
+  "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.formatOnSave": true
-  }
+  },
+  "black-formatter.args": [
+    "--preview",
+    "--line-length",
+    "80",
+    "--enable-unstable-feature=string_processing"
+  ],
 }

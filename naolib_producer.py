@@ -3,11 +3,8 @@ from kafka import KafkaProducer
 import json
 from kafka_setup import create_topic_if_not_exists
 import threading
+from constants import kafka_config
 
-# Kafka configuration
-kafka_config = {
-    "bootstrap_servers": "localhost:9095",  # Update with your Kafka broker
-}
 stops_information = None
 
 
@@ -27,7 +24,9 @@ def get_stops_of_line(line_name):
     for stop in get_stops_information():
         for ligne in stop["ligne"]:
             if ligne["numLigne"] == line_name:
-                stops.append({"codeLieu": stop["codeLieu"], "libelle": stop["libelle"]})
+                stops.append(
+                    {"codeLieu": stop["codeLieu"], "libelle": stop["libelle"]}
+                )
                 break
 
     return stops
@@ -59,7 +58,11 @@ def send_bus_position(line_name):
 
     for stop in get_stops_of_line(line_name):
 
-        url = f"https://open.tan.fr/ewp/tempsattentelieu.json/{stop['codeLieu']}/1/{line_name}"
+        url = (
+            "https://open.tan.fr/ewp/tempsattentelieu.json/"
+            f"{stop['codeLieu']}/"
+            f"1/{line_name}"
+        )
 
         response = requests.get(url)
 
@@ -69,6 +72,10 @@ def send_bus_position(line_name):
             # Publish each entry to Kafka
             for info in data:
                 info["stop"] = stop["codeLieu"]
+                info["codeArret"] = info["arret"]["codeArret"]
+                info["numLigne"] = info["ligne"]["numLigne"]
+                del info["ligne"]
+                del info["arret"]
                 producer.send(topic, value=info)
                 records += 1
 
