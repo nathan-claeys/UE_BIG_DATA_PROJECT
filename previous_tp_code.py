@@ -95,7 +95,8 @@ conf = (
     .setMaster("spark://spark:7077")
     .set(
         "spark.jars.packages",
-        "org.apache.hadoop:hadoop-aws:3.3.4,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3",
+        "org.apache.hadoop:hadoop-aws:3.3.4,"
+        "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3",
     )
     .set("spark.sql.shuffle.partitions", "10")
 )
@@ -116,7 +117,9 @@ schema = StructType(
     [
         StructField("created_at", StringType(), True),
         StructField("entry_id", IntegerType(), True),
-        StructField("wind_speed", StringType(), True),  # Voltage is initially a string
+        StructField(
+            "wind_speed", StringType(), True
+        ),  # Voltage is initially a string
     ]
 )
 
@@ -163,13 +166,10 @@ rolling_average = (
 
 # Collect the result as a Pandas DataFrame
 pandas_df = rolling_average.toPandas()
-pandas_df
 
 
 g = sns.lineplot(data=pandas_df, x="window_start", y="rolling_avg_wind_speed")
 g.xaxis.set_major_formatter(md.DateFormatter("%d/%m\n%H:%M"))
-
-pandas_df.dtypes
 
 
 # Kafka configuration
@@ -181,7 +181,9 @@ schema = StructType(
     [
         StructField("created_at", StringType(), True),
         StructField("entry_id", IntegerType(), True),
-        StructField("wind_speed", StringType(), True),  # Voltage is initially a string
+        StructField(
+            "wind_speed", StringType(), True
+        ),  # Voltage is initially a string
     ]
 )
 

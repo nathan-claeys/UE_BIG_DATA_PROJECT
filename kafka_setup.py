@@ -1,5 +1,6 @@
-from kafka.admin import KafkaAdminClient, NewTopic
 import logging
+from kafka.admin import KafkaAdminClient, NewTopic
+from kafka.errors import TopicAlreadyExistsError, NoBrokersAvailable
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -7,8 +8,12 @@ logger = logging.getLogger(__name__)
 
 
 def create_topic_if_not_exists(
-    bootstrap_servers, topic_name, num_partitions=1, replication_factor=1
-):
+    bootstrap_servers: str,
+    topic_name: str,
+    num_partitions: int = 1,
+    replication_factor: int = 1,
+) -> bool:
+    admin_client = None
     try:
         # Initialize Kafka Admin Client
         admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
@@ -17,7 +22,10 @@ def create_topic_if_not_exists(
         existing_topics = admin_client.list_topics()
 
         if topic_name in existing_topics:
-            logger.info(f"Topic '{topic_name}' already exists.")
+            logger.info(
+                "Topic '%s' already exists.",
+                topic_name,
+            )
             return
 
         # Define new topic
@@ -29,15 +37,31 @@ def create_topic_if_not_exists(
 
         # Create topic
         admin_client.create_topics(new_topics=[topic], validate_only=False)
-        logger.info(f"Topic '{topic_name}' created successfully.")
+        logger.info("Topic '%s' created successfully.", topic_name)
+        return True
 
     except TopicAlreadyExistsError:
-        logger.warning(f"Topic '{topic_name}' already exists. (Caught Exception)")
+        logger.warning(
+            "Topic '%s' already exists (caught exception).",
+            topic_name,
+        )
+        return False
+
     except NoBrokersAvailable:
         logger.error(
-            "No Kafka brokers available. Check 'bootstrap_servers' configuration."
+            "No Kafka brokers available."
+            " Check 'bootstrap_servers'configuration."
         )
-    except Exception as e:
-        logger.error(f"Failed to create topic '{topic_name}': {e}")
+        return False
+
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error(
+            "Failed to create topic %s: %s",
+            topic_name,
+            e,
+        )
+        return False
+
     finally:
-        admin_client.close()
+        if admin_client is not None:
+            admin_client.close()
