@@ -38,7 +38,7 @@ def get_trams_gare_nord():
     if response_1_1.status_code == 200 and response_1_2.status_code == 200 :
         data_1_1 = response_1_1.json()
         data_1_2 = response_1_2.json()
-        return data_1_1.horaires, data_1_2.horaires # "horaires":[{"heure":"4h","passages":["50d"]},{"heure":"5h","passages":["12","32","52"]}]
+        return data_1_1.get("horaires"), data_1_2.get("horaires") # "horaires":[{"heure":"4h","passages":["50d"]},{"heure":"5h","passages":["12","32","52"]}]
     else:
         print(f"Failed to fetch data: {response_1_1.status_code}, {response_1_2.status_code}")
         return [],[]
@@ -98,8 +98,14 @@ def send_trams_gare_nord():
 
     records = 0
 
-    for horaire in get_trams_gare_nord():
-        producer.send(topic, value=horaire)
+    data1, data2 = get_trams_gare_nord()
+
+    for info in data1:
+        producer.send(topic, value=info)
+        records += 1
+    
+    for info in data2:
+        producer.send(topic, value=info)
         records += 1
     
     producer.flush()
