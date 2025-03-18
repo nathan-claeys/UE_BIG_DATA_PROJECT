@@ -12,12 +12,15 @@ kafka_config = {
 stops_information = None
 
 def get_plane_arrival():
-    response = requests.get(API_PLANE_URL) #[{"icao24":"39ca84","firstSeen":1742251213,"estDepartureAirport":"LFRS","lastSeen":1742252046,"estArrivalAirport":"LFRS","callsign":"SAMU44  ","estDepartureAirportHorizDistance":6603,"estDepartureAirportVertDistance":239,"estArrivalAirportHorizDistance":3326,"estArrivalAirportVertDistance":155,"departureAirportCandidatesCount":0,"arrivalAirportCandidatesCount":0}]
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print({response.status_code}, {response.text})
-        return []
+    try: 
+        response = requests.get(API_PLANE_URL) #[{"icao24":"39ca84","firstSeen":1742251213,"estDepartureAirport":"LFRS","lastSeen":1742252046,"estArrivalAirport":"LFRS","callsign":"SAMU44  ","estDepartureAirportHorizDistance":6603,"estDepartureAirportVertDistance":239,"estArrivalAirportHorizDistance":3326,"estArrivalAirportVertDistance":155,"departureAirportCandidatesCount":0,"arrivalAirportCandidatesCount":0}]
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print({response.status_code}, {response.text})
+            return []
+    except Exception as e:
+        print(f"Failed to fetch data: {e}")
 
 def send_plane_arrival():
     print("Starting to collect plane arrival data...")
