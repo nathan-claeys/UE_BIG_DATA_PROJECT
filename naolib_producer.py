@@ -32,6 +32,39 @@ def get_stops_of_line(line_name):
     return stops
 
 
+def get_nearby_bike_stations(
+    position: tuple, distance_in_kilometers: int
+) -> list:
+    base_url = "https://data.nantesmetropole.fr"
+    bike_stations_url = (
+        "/api/explore/v2.1/catalog/datasets/"
+        "244400404_disponibilite-temps-reel-"
+        "velos-libre-service-naolib-nantes-metropole/records"
+    )
+    position_str = f"geom%27POINT({position[0]}%20{position[1]})%27"
+    distance_str = f"{distance_in_kilometers}km"
+    filter_query = (
+        f"?where=within_distance(position%2C%20{position_str}"
+        f"%2C%20{distance_str})"
+    )
+    order_query = f"&order_by=distance(position%2C%20{position_str})"
+
+    limit_query = "&limit=20"
+    timezone_query = "&timezone=Europe%2FParis"
+
+    response = requests.get(
+        f"{base_url}{bike_stations_url}{filter_query}"
+        f"{order_query}{limit_query}{timezone_query}",
+        timeout=5,
+    )
+    if response.status_code == 200:
+        data = response.json()
+        return data["results"]
+    else:
+        print(f"Failed to fetch data: {response.status_code}")
+        return []
+
+
 def send_bus_position(line_name):
     topic = "bus_position"
 
@@ -88,7 +121,14 @@ if __name__ == "__main__":
         kafka_config["bootstrap_servers"],
         "bus_position",
     )
+    create_topic_if_not_exists(
+        kafka_config["bootstrap_servers"],
+        "bike_stations",
+    )
 
+    TEST_POSITION = (-1.520754797081473, 47.282105501965894)
+    TEST_RADIUS = 10
+    print(get_nearby_bike_stations(TEST_POSITION, TEST_RADIUS))
     stop_event = threading.Event()
 
     # Start the periodic thread
