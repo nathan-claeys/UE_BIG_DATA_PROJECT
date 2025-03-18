@@ -3,11 +3,7 @@ from kafka import KafkaProducer
 import json
 from kafka_setup import create_topic_if_not_exists
 import threading
-
-# Kafka configuration
-kafka_config = {
-    "bootstrap_servers": "localhost:9095",  # Update with your Kafka broker
-}
+from constants import kafka_config
 stops_information = None
 
 
@@ -58,6 +54,10 @@ def send_bus_position(line_name):
             # Publish each entry to Kafka
             for info in data:
                 info["stop"] = stop["codeLieu"]
+                info["codeArret"] = info["arret"]["codeArret"]
+                info["numLigne"] = info["ligne"]["numLigne"]
+                del info["ligne"]
+                del info["arret"]
                 producer.send(topic, value=info)
                 records += 1
 
