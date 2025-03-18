@@ -141,19 +141,22 @@ def get_bus_airport():
     url = "https://open.tan.fr/ewp/horairesarret.json/AEPO1"  # aeroport
     response_38 = requests.get(url + "/38/1/2025-03-17")  # ligne 38
     response_98 = requests.get(url + "/98/1/2025-03-17")  # ligne 98
-    if response_38.status_code == 200 and response_98.status_code == 200:
-        data_38 = response_38.json()
-        data_98 = response_98.json()
-        return (
-            data_38.get("horaires"),
-            data_98.get("horaires"),
-        )  # "horaires":[{"heure":"4h","passages":["50d"]},{"heure":"5h","passages":["12","32","52"]}]
-    else:
-        print(
-            f"Failed to fetch data: {response_38.status_code},"
-            f" {response_98.status_code}"
-        )
-        return [], []
+    try :
+        if response_38.status_code == 200 and response_98.status_code == 200:
+            data_38 = response_38.json()
+            data_98 = response_98.json()
+            return (
+                data_38.get("horaires"),
+                data_98.get("horaires"),
+            )  # "horaires":[{"heure":"4h","passages":["50d"]},{"heure":"5h","passages":["12","32","52"]}]
+        else:
+            print(
+                f"Failed to fetch data: {response_38.status_code},"
+                f" {response_98.status_code}"
+            )
+            return [], []
+    except Exception as e:
+        print(f"Failed to fetch data: {e}")
 
 
 def send_bike_stations(position, radius):
