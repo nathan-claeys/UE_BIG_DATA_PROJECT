@@ -32,6 +32,17 @@ def get_stops_of_line(line_name):
 
     return stops
 
+def get_trams_gare_nord():
+    url = "https://open.tan.fr/ewp/horairesarret.json/GSNO" 
+    response_1_1 = requests.get(url + "1/1/2") # tram 1 sens 1
+    response_1_2 = requests.get(url + "2/1/1") # tram 1 sens 2
+    if response_1_1.status_code == 200 and response_1_2.status_code == 200 :
+        data_1_1 = response_1_1.json()
+        data_1_2 = response_1_2.json()
+        return data_1_1.horaires, data_1_2.horaires # "horaires":[{"heure":"4h","passages":["50d"]},{"heure":"5h","passages":["12","32","52"]}]
+    else:
+        print(f"Failed to fetch data: {response_1_1.status_code}, {response_1_2.status_code}")
+        return [],[]
 
 def send_bus_position(line_name):
     topic = "bus_position"
@@ -67,6 +78,26 @@ def send_bus_position(line_name):
     producer.flush()
     print(f"Sent {records} records.")
 
+def send_trams_gare_nord():
+    topic = "trams_gare_nord"
+
+    # Initialize Kafka Producer
+    producer = KafkaProducer(
+        bootstrap_servers=kafka_config["bootstrap_servers"],
+        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+    )
+
+    print("Starting to collect tram data...")
+
+    records = 0
+
+    for horaire in get_trams_gare_nord():
+        producer.send(topic, value=horaire)
+        records += 1
+    
+    producer.flush()
+    print(f"Sent {records} records.")
+
 
 def run_periodic(interval_sec, stop_event, task, task_args=()):
     while not stop_event.is_set():
@@ -78,6 +109,10 @@ def run_periodic(interval_sec, stop_event, task, task_args=()):
 if __name__ == "__main__":
 
     create_topic_if_not_exists(kafka_config["bootstrap_servers"], "bus_position")
+    create_topic_if_not_exists(kafka_config["bootstrap_servers"], "trams_gare_nord")
+
+    # Non periodic task
+    send_trams_gare_nord()
 
     stop_event = threading.Event()
 
