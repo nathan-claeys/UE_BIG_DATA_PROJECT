@@ -132,7 +132,16 @@ if __name__ == "__main__":
     stop_event = threading.Event()
 
     # Start the periodic thread
-    thread = threading.Thread(
+    periodic_thread = threading.Thread(
         target=run_periodic, args=(60, stop_event, send_bus_position, ("C6",))
     )
-    thread.start()
+    periodic_thread.start()
+
+    try:
+        # Keep the main thread alive while the periodic thread is running
+        while periodic_thread.is_alive():
+            periodic_thread.join(timeout=1)
+    except KeyboardInterrupt:
+        print("Interrupt received, shutting down gracefully...")
+        stop_event.set()
+        periodic_thread.join()
