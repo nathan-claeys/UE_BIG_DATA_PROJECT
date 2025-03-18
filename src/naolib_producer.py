@@ -1,80 +1,15 @@
 from datetime import datetime
 import json
-import logging
 import threading
 import requests
 from kafka import KafkaProducer
-from kafka.admin import KafkaAdminClient, NewTopic
-from kafka.errors import TopicAlreadyExistsError, NoBrokersAvailable
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from topics import create_topic_if_not_exists
+from bike_producer import get_nearby_bike_stations, send_bike_stations
 
 # Kafka configuration
 kafka_config = {
     "bootstrap_servers": "kafka1:9092",  # Update with your Kafka broker
 }
-
-
-def create_topic_if_not_exists(
-    bootstrap_servers: str,
-    topic_name: str,
-    num_partitions: int = 1,
-    replication_factor: int = 1,
-) -> bool:
-    admin_client = None
-    try:
-        # Initialize Kafka Admin Client
-        admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
-
-        # Fetch current topics
-        existing_topics = admin_client.list_topics()
-
-        if topic_name in existing_topics:
-            logger.info(
-                "Topic '%s' already exists.",
-                topic_name,
-            )
-            return
-
-        # Define new topic
-        topic = NewTopic(
-            name=topic_name,
-            num_partitions=num_partitions,
-            replication_factor=replication_factor,
-        )
-
-        # Create topic
-        admin_client.create_topics(new_topics=[topic], validate_only=False)
-        logger.info("Topic '%s' created successfully.", topic_name)
-        return True
-
-    except TopicAlreadyExistsError:
-        logger.warning(
-            "Topic '%s' already exists (caught exception).",
-            topic_name,
-        )
-        return False
-
-    except NoBrokersAvailable:
-        logger.error(
-            "No Kafka brokers available."
-            " Check 'bootstrap_servers'configuration."
-        )
-        return False
-
-    except Exception as e:  # pylint: disable=broad-except
-        logger.error(
-            "Failed to create topic %s: %s",
-            topic_name,
-            e,
-        )
-        return False
-
-    finally:
-        if admin_client is not None:
-            admin_client.close()
 
 
 stops_information = None
@@ -104,39 +39,6 @@ def get_stops_of_line(line_name):
     return stops
 
 
-def get_nearby_bike_stations(
-    position: tuple, distance_in_kilometers: int
-) -> list:
-    base_url = "https://data.nantesmetropole.fr"
-    bike_stations_url = (
-        "/api/explore/v2.1/catalog/datasets/"
-        "244400404_disponibilite-temps-reel-"
-        "velos-libre-service-naolib-nantes-metropole/records"
-    )
-    position_str = f"geom%27POINT({position[0]}%20{position[1]})%27"
-    distance_str = f"{distance_in_kilometers}km"
-    filter_query = (
-        f"?where=within_distance(position%2C%20{position_str}"
-        f"%2C%20{distance_str})"
-    )
-    order_query = f"&order_by=distance(position%2C%20{position_str})"
-
-    limit_query = "&limit=20"
-    timezone_query = "&timezone=Europe%2FParis"
-
-    response = requests.get(
-        f"{base_url}{bike_stations_url}{filter_query}"
-        f"{order_query}{limit_query}{timezone_query}",
-        timeout=5,
-    )
-    if response.status_code == 200:
-        data = response.json()
-        return data["results"]
-    else:
-        print(f"Failed to fetch data: {response.status_code}")
-        return []
-
-
 def get_bus_airport():
     url = "https://open.tan.fr/ewp/horairesarret.json/AEPO1"  # aeroport
     response_38 = requests.get(url + "/38/1/2025-03-17")  # ligne 38
@@ -157,29 +59,6 @@ def get_bus_airport():
             return [], []
     except Exception as e:
         print(f"Failed to fetch data: {e}")
-
-
-def send_bike_stations(position, radius):
-    topic = "bike_stations"
-
-    # Initialize Kafka Producer
-    producer = KafkaProducer(
-        bootstrap_servers=kafka_config["bootstrap_servers"],
-        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-    )
-
-    print("Starting to collect bike station data...")
-
-    records = 0
-
-    bike_stations = get_nearby_bike_stations(position, radius)
-
-    for station in bike_stations:
-        producer.send(topic, value=station)
-        records += 1
-
-    producer.flush()
-    print(f"Sent {records} records.")
 
 
 def send_bus_position(line_name):
