@@ -1,7 +1,10 @@
 import json
 import requests
 from kafka import KafkaProducer
-from naolib_producer import kafka_config
+
+kafka_config = {
+    "bootstrap_servers": "kafka1:9092",  # Update with your Kafka broker
+}
 
 
 def get_nearby_bike_stations(
