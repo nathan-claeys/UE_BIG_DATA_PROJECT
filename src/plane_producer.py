@@ -38,8 +38,11 @@ def send_plane_arrival():
     producer.flush()
 
 
-if __name__ == "__main__":
+def main():
     create_topic_if_not_exists(kafka_config["bootstrap_servers"],"plane_arrival")
 
     # Non periodic producer
     send_plane_arrival()
+    
+if __name__ == "__main__":
+    main()
