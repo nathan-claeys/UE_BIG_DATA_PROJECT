@@ -62,3 +62,15 @@ services:
       - KAFKA_CLUSTERS_0_NAME=kafka1
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka1:9092
       - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper1:2181 
+  notebook:
+    #image: grosinosky/bigdata_fita3_jupyter:tp5
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jupyter-project
+    ports: 
+    - "8888:8888"
+    - "4040:4040"
+    environment:
+      JUPYTER_ENABLE_LAB: yes
+    command: start-notebook.py --NotebookApp.token=''
