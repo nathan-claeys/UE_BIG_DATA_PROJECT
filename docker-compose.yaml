@@ -74,3 +74,5 @@ services:
     environment:
       JUPYTER_ENABLE_LAB: yes
     command: start-notebook.py --NotebookApp.token=''
+    volumes:
+      - ./src:/home/jovyan/
