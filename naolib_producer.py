@@ -64,17 +64,24 @@ def get_nearby_bike_stations(
         print(f"Failed to fetch data: {response.status_code}")
         return []
 
+
 def get_trams_gare_nord():
-    url = "https://open.tan.fr/ewp/horairesarret.json/GSNO" 
-    response_1_1 = requests.get(url + "1/1/2") # tram 1 sens 1
-    response_1_2 = requests.get(url + "2/1/1") # tram 1 sens 2
-    if response_1_1.status_code == 200 and response_1_2.status_code == 200 :
+    url = "https://open.tan.fr/ewp/horairesarret.json/GSNO"
+    response_1_1 = requests.get(url + "1/1/2")  # tram 1 sens 1
+    response_1_2 = requests.get(url + "2/1/1")  # tram 1 sens 2
+    if response_1_1.status_code == 200 and response_1_2.status_code == 200:
         data_1_1 = response_1_1.json()
         data_1_2 = response_1_2.json()
-        return data_1_1.get("horaires"), data_1_2.get("horaires") # "horaires":[{"heure":"4h","passages":["50d"]},{"heure":"5h","passages":["12","32","52"]}]
+        return data_1_1.get("horaires"), data_1_2.get(
+            "horaires"
+        )  # "horaires":[{"heure":"4h","passages":["50d"]},{"heure":"5h","passages":["12","32","52"]}]
     else:
-        print(f"Failed to fetch data: {response_1_1.status_code}, {response_1_2.status_code}")
-        return [],[]
+        print(
+            f"Failed to fetch data: {response_1_1.status_code},"
+            f" {response_1_2.status_code}"
+        )
+        return [], []
+
 
 def send_bike_stations(position, radius):
     topic = "bike_stations"
@@ -141,6 +148,7 @@ def send_bus_position(line_name):
     producer.flush()
     print(f"Sent {records} records.")
 
+
 def send_trams_gare_nord():
     topic = "trams_gare_nord"
 
@@ -159,14 +167,15 @@ def send_trams_gare_nord():
     for info in data1:
         producer.send(topic, value=info)
         records += 1
-    
+
     for info in data2:
         producer.send(topic, value=info)
         records += 1
-    
+
     producer.flush()
     print(f"Sent {records} records.")
 
+
 def send_trams_gare_nord():
     topic = "trams_gare_nord"
 
@@ -185,11 +194,11 @@ def send_trams_gare_nord():
     for info in data1:
         producer.send(topic, value=info)
         records += 1
-    
+
     for info in data2:
         producer.send(topic, value=info)
         records += 1
-    
+
     producer.flush()
     print(f"Sent {records} records.")
 
@@ -203,9 +212,17 @@ def run_periodic(interval_sec, stop_event, task, task_args=()):
 
 if __name__ == "__main__":
 
-    create_topic_if_not_exists(kafka_config["bootstrap_servers"], "bus_position")
-    create_topic_if_not_exists(kafka_config["bootstrap_servers"], "trams_gare_nord")
-    create_topic_if_not_exists(kafka_config["bootstrap_servers"], "bike_stations",
+    create_topic_if_not_exists(
+        kafka_config["bootstrap_servers"],
+        "bus_position",
+    )
+    create_topic_if_not_exists(
+        kafka_config["bootstrap_servers"],
+        "trams_gare_nord",
+    )
+    create_topic_if_not_exists(
+        kafka_config["bootstrap_servers"],
+        "bike_stations",
     )
 
     # Non periodic task
@@ -216,17 +233,33 @@ if __name__ == "__main__":
     print(get_nearby_bike_stations(TEST_POSITION, TEST_RADIUS))
     stop_event = threading.Event()
 
-    # Start the periodic thread
-    periodic_thread = threading.Thread(
+    # Create the periodic thread for bus position data
+    bus_thread = threading.Thread(
         target=run_periodic, args=(60, stop_event, send_bus_position, ("C6",))
     )
-    periodic_thread.start()
+
+    # Create another periodic thread for bike station data
+    bike_thread = threading.Thread(
+        target=run_periodic,
+        args=(
+            120,
+            stop_event,
+            send_bike_stations,
+            (TEST_POSITION, TEST_RADIUS),
+        ),
+    )
+
+    # Start both threads
+    bus_thread.start()
+    bike_thread.start()
 
     try:
-        # Keep the main thread alive while the periodic thread is running
-        while periodic_thread.is_alive():
-            periodic_thread.join(timeout=1)
+        # Keep the main thread alive while the periodic threads are running
+        while bus_thread.is_alive() or bike_thread.is_alive():
+            bus_thread.join(timeout=1)
+            bike_thread.join(timeout=1)
     except KeyboardInterrupt:
         print("Interrupt received, shutting down gracefully...")
         stop_event.set()
-        periodic_thread.join()
+        bus_thread.join()
+        bike_thread.join()
