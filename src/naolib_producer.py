@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import json
 import logging
 import threading
@@ -192,7 +192,7 @@ def send_bus_position(line_name):
 
     records = 0
 
-    time = datetime.utcnow().isoformat()
+    time = datetime.datetime.now().isoformat()
 
     for stop in get_stops_of_line(line_name):
 
