@@ -7,7 +7,7 @@ API_PLANE_URL = "https://opensky-network.org/api/flights/arrival?airport=LFRS&be
 
 # Kafka configuration
 kafka_config = {
-    "bootstrap_servers": "localhost:9095",  # Update with your Kafka broker
+    "bootstrap_servers": "kafka1:9092",  # Update with your Kafka broker
 }
 stops_information = None
 
