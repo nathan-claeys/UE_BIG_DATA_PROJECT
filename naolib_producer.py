@@ -76,6 +76,29 @@ def get_trams_gare_nord():
         print(f"Failed to fetch data: {response_1_1.status_code}, {response_1_2.status_code}")
         return [],[]
 
+def send_bike_stations(position, radius):
+    topic = "bike_stations"
+
+    # Initialize Kafka Producer
+    producer = KafkaProducer(
+        bootstrap_servers=kafka_config["bootstrap_servers"],
+        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+    )
+
+    print("Starting to collect bike station data...")
+
+    records = 0
+
+    bike_stations = get_nearby_bike_stations(position, radius)
+
+    for station in bike_stations:
+        producer.send(topic, value=station)
+        records += 1
+
+    producer.flush()
+    print(f"Sent {records} records.")
+
+
 def send_bus_position(line_name):
     topic = "bus_position"
 
