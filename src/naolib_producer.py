@@ -27,13 +27,11 @@ def get_stops_information():
 
 
 def get_stops_of_line(line_name):
-    stops = []
+    stops = {}
     for stop in get_stops_information():
         for ligne in stop["ligne"]:
             if ligne["numLigne"] == line_name:
-                stops.append(
-                    {"codeLieu": stop["codeLieu"], "libelle": stop["libelle"]}
-                )
+                stops[stop["codeLieu"]] = stop["libelle"]
                 break
 
     return stops
@@ -76,12 +74,10 @@ def send_bus_position(line_name):
 
     time = datetime.now().isoformat()
 
-    for stop in get_stops_of_line(line_name):
+    for stop in get_stops_of_line(line_name).keys():
 
         url = (
-            "https://open.tan.fr/ewp/tempsattentelieu.json/"
-            f"{stop['codeLieu']}/"
-            f"1/{line_name}"
+            f"https://open.tan.fr/ewp/tempsattentelieu.json/{stop}/1/{line_name}"
         )
 
         try:
@@ -92,7 +88,7 @@ def send_bus_position(line_name):
 
                 # Publish each entry to Kafka
                 for info in data:
-                    info["stop"] = stop["codeLieu"]
+                    info["stop"] = stop
                     info["codeArret"] = info["arret"]["codeArret"]
                     info["numLigne"] = info["ligne"]["numLigne"]
                     del info["ligne"]
