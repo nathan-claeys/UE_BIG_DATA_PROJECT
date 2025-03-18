@@ -26,7 +26,7 @@ def create_topic_if_not_exists(
                 "Topic '%s' already exists.",
                 topic_name,
             )
-            return
+            return True
 
         # Define new topic
         topic = NewTopic(
