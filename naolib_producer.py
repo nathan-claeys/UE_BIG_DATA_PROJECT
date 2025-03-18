@@ -4,6 +4,7 @@ import json
 from kafka_setup import create_topic_if_not_exists
 import threading
 from constants import kafka_config
+
 stops_information = None
 
 
