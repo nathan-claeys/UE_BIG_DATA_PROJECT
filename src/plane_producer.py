@@ -1,7 +1,7 @@
 import requests
 from kafka import KafkaProducer
 import json
-from src.topics import create_topic_if_not_exists
+from topics import create_topic_if_not_exists
 
 API_PLANE_URL = "https://opensky-network.org/api/flights/arrival?airport=LFRS&begin=1742166015&end=1742252385"
 
