@@ -192,7 +192,7 @@ def send_bus_position(line_name):
 
     records = 0
 
-    time = datetime.datetime.now().isoformat()
+    time = datetime.now().isoformat()
 
     for stop in get_stops_of_line(line_name):
 
