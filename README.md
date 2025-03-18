@@ -11,6 +11,19 @@
 
 - Pour une ligne, les temps d'attente à chaque arrêt => Antoine
 - Pour une zone géographique, disponibilité dans des stations vélo / le nombre de places totales (par ex: 3 sur 4) => JB
+# Démarrage
+
+## Développement
+```
+python3 -m venv .venv
+```
+```
+.venv\Scripts\activate.bat
+```
+```
+pip install -r requirements.txt
+```
+
 
 # Projet
 
