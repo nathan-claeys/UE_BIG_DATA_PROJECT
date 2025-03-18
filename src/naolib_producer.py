@@ -43,7 +43,7 @@ def get_bus_airport():
     url = "https://open.tan.fr/ewp/horairesarret.json/AEPO1"  # aeroport
     response_38 = requests.get(url + "/38/1/2025-03-17")  # ligne 38
     response_98 = requests.get(url + "/98/1/2025-03-17")  # ligne 98
-    try :
+    try:
         if response_38.status_code == 200 and response_98.status_code == 200:
             data_38 = response_38.json()
             data_98 = response_98.json()
@@ -165,7 +165,7 @@ def main():
 
     TEST_POSITION = (-1.520754797081473, 47.282105501965894)
     TEST_RADIUS = 10
-    print(get_nearby_bike_stations(TEST_POSITION, TEST_RADIUS))
+
     stop_event = threading.Event()
 
     # Create the periodic thread for bus position data
