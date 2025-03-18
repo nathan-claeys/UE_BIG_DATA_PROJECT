@@ -67,8 +67,8 @@ def get_nearby_bike_stations(
 
 def get_trams_gare_nord():
     url = "https://open.tan.fr/ewp/horairesarret.json/GSNO"
-    response_1_1 = requests.get(url + "1/1/2")  # tram 1 sens 1
-    response_1_2 = requests.get(url + "2/1/1")  # tram 1 sens 2
+    response_1_1 = requests.get(url + "1/1/2/2025-03-18")  # tram 1 sens 1
+    response_1_2 = requests.get(url + "2/1/1/2025-03-18")  # tram 1 sens 2
     if response_1_1.status_code == 200 and response_1_2.status_code == 200:
         data_1_1 = response_1_1.json()
         data_1_2 = response_1_2.json()
