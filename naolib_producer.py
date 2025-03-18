@@ -31,6 +31,39 @@ def get_stops_of_line(line_name):
 
     return stops
 
+
+def get_nearby_bike_stations(
+    position: tuple, distance_in_kilometers: int
+) -> list:
+    base_url = "https://data.nantesmetropole.fr"
+    bike_stations_url = (
+        "/api/explore/v2.1/catalog/datasets/"
+        "244400404_disponibilite-temps-reel-"
+        "velos-libre-service-naolib-nantes-metropole/records"
+    )
+    position_str = f"geom%27POINT({position[0]}%20{position[1]})%27"
+    distance_str = f"{distance_in_kilometers}km"
+    filter_query = (
+        f"?where=within_distance(position%2C%20{position_str}"
+        f"%2C%20{distance_str})"
+    )
+    order_query = f"&order_by=distance(position%2C%20{position_str})"
+
+    limit_query = "&limit=20"
+    timezone_query = "&timezone=Europe%2FParis"
+
+    response = requests.get(
+        f"{base_url}{bike_stations_url}{filter_query}"
+        f"{order_query}{limit_query}{timezone_query}",
+        timeout=5,
+    )
+    if response.status_code == 200:
+        data = response.json()
+        return data["results"]
+    else:
+        print(f"Failed to fetch data: {response.status_code}")
+        return []
+
 def get_trams_gare_nord():
     url = "https://open.tan.fr/ewp/horairesarret.json/GSNO" 
     response_1_1 = requests.get(url + "1/1/2") # tram 1 sens 1
@@ -111,6 +144,32 @@ def send_trams_gare_nord():
     producer.flush()
     print(f"Sent {records} records.")
 
+def send_trams_gare_nord():
+    topic = "trams_gare_nord"
+
+    # Initialize Kafka Producer
+    producer = KafkaProducer(
+        bootstrap_servers=kafka_config["bootstrap_servers"],
+        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+    )
+
+    print("Starting to collect tram data...")
+
+    records = 0
+
+    data1, data2 = get_trams_gare_nord()
+
+    for info in data1:
+        producer.send(topic, value=info)
+        records += 1
+    
+    for info in data2:
+        producer.send(topic, value=info)
+        records += 1
+    
+    producer.flush()
+    print(f"Sent {records} records.")
+
 
 def run_periodic(interval_sec, stop_event, task, task_args=()):
     while not stop_event.is_set():
@@ -123,14 +182,28 @@ if __name__ == "__main__":
 
     create_topic_if_not_exists(kafka_config["bootstrap_servers"], "bus_position")
     create_topic_if_not_exists(kafka_config["bootstrap_servers"], "trams_gare_nord")
+    create_topic_if_not_exists(kafka_config["bootstrap_servers"], "bike_stations",
+    )
 
     # Non periodic task
     send_trams_gare_nord()
 
+    TEST_POSITION = (-1.520754797081473, 47.282105501965894)
+    TEST_RADIUS = 10
+    print(get_nearby_bike_stations(TEST_POSITION, TEST_RADIUS))
     stop_event = threading.Event()
 
     # Start the periodic thread
-    thread = threading.Thread(
+    periodic_thread = threading.Thread(
         target=run_periodic, args=(60, stop_event, send_bus_position, ("C6",))
     )
-    thread.start()
+    periodic_thread.start()
+
+    try:
+        # Keep the main thread alive while the periodic thread is running
+        while periodic_thread.is_alive():
+            periodic_thread.join(timeout=1)
+    except KeyboardInterrupt:
+        print("Interrupt received, shutting down gracefully...")
+        stop_event.set()
+        periodic_thread.join()
