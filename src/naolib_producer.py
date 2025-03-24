@@ -15,6 +15,10 @@ kafka_config = {
 stops_information = None
 
 
+TEST_POSITION = (-1.520754797081473, 47.282105501965894)
+TEST_RADIUS = 10
+
+
 def get_stops_information():
     global stops_information
     if stops_information is None:
@@ -76,9 +80,7 @@ def send_bus_position(line_name):
 
     for stop in get_stops_of_line(line_name).keys():
 
-        url = (
-            f"https://open.tan.fr/ewp/tempsattentelieu.json/{stop}/1/{line_name}"
-        )
+        url = f"https://open.tan.fr/ewp/tempsattentelieu.json/{stop}/1/{line_name}"
 
         try:
             response = requests.get(url)
@@ -134,6 +136,7 @@ def send_bus_airport():
     producer.flush()
     print(f"Sent {records} records.")
 
+
 def get_lines_from_stop(stop_name):
     lines = []
     for stop in get_stops_information():
@@ -141,6 +144,7 @@ def get_lines_from_stop(stop_name):
             for line in stop["ligne"]:
                 lines.append(line["numLigne"])
     return lines
+
 
 def send_bus_affluence(stop_name):
     lines = get_lines_from_stop(stop_name[:4])
@@ -155,7 +159,7 @@ def send_bus_affluence(stop_name):
     print("Starting to collect bus affluence data...")
 
     records = 0
-    
+
     for line in lines:
         url = f"https://open.tan.fr/ewp/horairesarret.json/{stop_name}/{line}/1"
 
@@ -185,14 +189,14 @@ def send_bus_affluence(stop_name):
                             "numLigne": num_ligne,
                             "stop": stop,
                             "heure": heure,
-                            "passage": passage
+                            "passage": passage,
                         }
                         producer.send("bus_affluence_horaire", value=message)
                         records += 1
 
             else:
                 print(f"Failed to fetch data: {response.status_code}")
-        
+
         except Exception as e:
             print(f"Error fetching data for {stop_name}, line {line}: {e}")
 
@@ -207,7 +211,7 @@ def run_periodic(interval_sec, stop_event, task, task_args=()):
         stop_event.wait(interval_sec)
 
 
-def main():
+def main(selected_bike_coordinates):
     create_topic_if_not_exists(
         kafka_config["bootstrap_servers"],
         "bus_position",
@@ -221,15 +225,11 @@ def main():
         "bike_stations",
     )
     create_topic_if_not_exists(
-        kafka_config["bootstrap_servers"],
-        "bus_affluence_horaire"
+        kafka_config["bootstrap_servers"], "bus_affluence_horaire"
     )
 
     # Non periodic task
     send_bus_airport()
-
-    TEST_POSITION = (-1.520754797081473, 47.282105501965894)
-    TEST_RADIUS = 10
 
     stop_event = threading.Event()
 
@@ -244,10 +244,10 @@ def main():
     bike_thread = threading.Thread(
         target=run_periodic,
         args=(
-            120,
+            30,
             stop_event,
             send_bike_stations,
-            (TEST_POSITION, TEST_RADIUS),
+            (selected_bike_coordinates, TEST_RADIUS),
         ),
     )
 
