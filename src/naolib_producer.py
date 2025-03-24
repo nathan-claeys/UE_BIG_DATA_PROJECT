@@ -244,7 +244,7 @@ def main():
     bike_thread = threading.Thread(
         target=run_periodic,
         args=(
-            120,
+            30,
             stop_event,
             send_bike_stations,
             (TEST_POSITION, TEST_RADIUS),
