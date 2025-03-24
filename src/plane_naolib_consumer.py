@@ -117,12 +117,6 @@ def format_result(ranked_df):
     return result_df
 
 def display_chart(result_pd):
-    """
-    Affiche un graphique scatter plot :
-      - L'axe des abscisses représente l'heure d'arrivée de l'avion (en format datetime)
-      - L'axe des ordonnées affiche le temps d'attente en minutes
-      - Une couleur différente est utilisée pour chaque numéro de bus
-    """
     fig, ax = plt.subplots()
     for bus, group in result_pd.groupby('bus'):
         ax.scatter(group['arrival_time'], group['wait_minutes'], label=f"Bus {bus}")
