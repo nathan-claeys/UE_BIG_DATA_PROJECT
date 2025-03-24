@@ -83,7 +83,7 @@ def main():
     def format_station(
         name,
         address,
-        # last_update,
+        last_update,
         available_bikes,
         bike_stands,
         available_bike_stands,
@@ -104,10 +104,10 @@ def main():
             info_line = f"{bike_info}{stand_info}{discrepancy}"
 
         formatted = (
-            f"Station: {name:<25} | "
+            f"Station: {name:<40} | "
             f"Address: {address:<70} | "
             # f"Last Update: {last_update} | "
-            f"Statio info: {info_line:<60} "
+            f"Statio info: {info_line:<70} "
         )
         return formatted
 
