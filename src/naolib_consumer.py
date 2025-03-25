@@ -82,17 +82,23 @@ def main():
             window("created_at", "1 minute"),
             col("sens")
         ) \
-        .agg(collect_list(struct(col("stop"), col("minutes"))).alias("stops"))
+        .agg(collect_list(struct(col("stop"), col("minutes"))).alias("stops")) # Aggrégation des arrêts et minutes d'attente
 
-    # Fonction UDF pour détecter la position des bus sur une ligne ordonnée
+
+    # Fonction pour détecter la position des bus sur une ligne ordonnée
     def detect_bus_positions(stops, stops_list):
         result = []
         for idx, stop in enumerate(stops_list):
+            # Trouver l'arrêt actuel dans les données
             current = next((x for x in stops if x["stop"] == stop), None)
+            # Trouver l'arrêt précédent (s'il y en a un)
             prev = next((x for x in stops if x["stop"] == stops_list[idx - 1]), None) if idx > 0 else None
 
+            # Cas où le bus est À un arrêt précis
             if current and current["minutes"] == 0:
                 result.append((stop, True))
+            
+            # Cas où le bus est ENTRE deux arrêts
             elif current and prev and current["minutes"] > 0 and prev["minutes"] > current["minutes"]:
                 result.append((stops_list[idx - 1] + "|" + stop, False))
         return result
