@@ -48,5 +48,5 @@ Lancer le producer (**nécessaire pour tous les consumers**) : ``` producer.ipyn
 
 
 ## Interfaces graphiques
-kafka-ui: ``` localhost:8082```
-spark-ui: ``` localhost:8080 ```
+- kafka-ui: ``` localhost:8082```
+- spark-ui: ``` localhost:8080 ```
