@@ -1,6 +1,14 @@
 from pyspark.sql import SparkSession
 from pyspark import SparkConf
-from pyspark.sql.functions import from_json, col, to_timestamp, udf, explode
+from pyspark.sql.functions import (
+    from_json,
+    col,
+    to_timestamp,
+    udf,
+    explode,
+    avg,
+    window,
+)
 from pyspark.sql.types import (
     StructType,
     StructField,
@@ -80,54 +88,63 @@ def main():
         ).alias("last_update"),
     )
 
-    def format_station(
-        name,
-        address,
-        last_update,
-        available_bikes,
-        bike_stands,
-        available_bike_stands,
-    ):
+    # Group events into 1-minute windows per station (name & address)
+    windowed_stream = (
+        parsed_stream.withWatermark("last_update", "10 seconds")
+        .groupBy(
+            col("name"), col("address"), window(col("last_update"), "1 minute")
+        )
+        .agg(
+            avg("available_bikes").alias("available_bikes"),
+            avg("available_bike_stands").alias("available_bike_stands"),
+            avg("bike_stands").alias("bike_stands"),
+        )
+    )
+
+    # UDF to compute the formatted bar (station info)
+    def compute_bar(available_bikes, bike_stands, available_bike_stands):
         if (
             available_bikes is None
             or available_bike_stands is None
             or bike_stands is None
         ):
-            info_line = "[No data]"
+            return "[No data]"
         else:
+            available_bikes = int(round(available_bikes))
+            available_bike_stands = int(round(available_bike_stands))
+            bike_stands = int(round(bike_stands))
             bike_info = "#" * available_bikes
             stand_info = "-" * available_bike_stands
             discrepancy = ""
             if (available_bikes + available_bike_stands) != bike_stands:
                 diff = bike_stands - (available_bikes + available_bike_stands)
-                discrepancy = "?" * diff
-            info_line = f"{bike_info}{stand_info}{discrepancy}"
+                discrepancy = "?" * abs(diff)
+            return f"{bike_info}{stand_info}{discrepancy}"
 
-        formatted = (
-            f"Station: {name:<40} | "
-            f"Address: {address:<70} | "
-            # f"Last Update: {last_update} | "
-            f"Statio info: {info_line:<70} "
-        )
-        return formatted
+    compute_bar_udf = udf(compute_bar, StringType())
 
-    format_station_udf = udf(format_station, StringType())
-
-    formatted_stream = parsed_stream.withColumn(
-        "formatted_output",
-        format_station_udf(
-            col("name"),
-            col("address"),
-            col("last_update"),
+    # Create a new column "bar" for the station info
+    result_stream = windowed_stream.withColumn(
+        "bar",
+        compute_bar_udf(
             col("available_bikes"),
             col("bike_stands"),
             col("available_bike_stands"),
         ),
     )
 
+    # Select separate columns: window start, window end, station, address, and bar.
+    # Order by window start and then station name.
+    final_stream = result_stream.select(
+        col("window.start").alias("window_start"),
+        col("window.end").alias("window_end"),
+        col("name").alias("station"),
+        col("address"),
+        col("bar"),
+    ).orderBy("window_start", "station")
+
     query = (
-        formatted_stream.select("formatted_output")
-        .writeStream.outputMode("append")
+        final_stream.writeStream.outputMode("complete")
         .format("console")
         .option("truncate", "false")
         .start()
@@ -135,7 +152,7 @@ def main():
 
     try:
         query.awaitTermination()
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         print("Streaming query terminated or timed out:", e)
 
 
