@@ -88,7 +88,6 @@ def main():
         ).alias("last_update"),
     )
 
-    # Group events into 1-minute windows per station (name & address)
     windowed_stream = (
         parsed_stream.withWatermark("last_update", "10 seconds")
         .groupBy(
@@ -101,7 +100,6 @@ def main():
         )
     )
 
-    # UDF to compute the formatted bar (station info)
     def compute_bar(available_bikes, bike_stands, available_bike_stands):
         if (
             available_bikes is None
@@ -123,7 +121,6 @@ def main():
 
     compute_bar_udf = udf(compute_bar, StringType())
 
-    # Create a new column "bar" for the station info
     result_stream = windowed_stream.withColumn(
         "bar",
         compute_bar_udf(
@@ -133,8 +130,6 @@ def main():
         ),
     )
 
-    # Select separate columns: window start, window end, station, address, and bar.
-    # Order by window start and then station name.
     final_stream = result_stream.select(
         col("window.start").alias("window_start"),
         col("window.end").alias("window_end"),
