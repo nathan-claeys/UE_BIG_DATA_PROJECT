@@ -35,7 +35,7 @@ def build_query_params(position: tuple, distance_in_kilometers: int) -> dict:
     return {
         "where": f"within_distance(position, {position_str}, {distance_str})",
         "order_by": f"distance(position, {position_str})",
-        "limit": 20,
+        "limit": 5,
         "timezone": "Europe/Paris",
     }
 
