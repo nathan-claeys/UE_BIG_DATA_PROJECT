@@ -19,7 +19,6 @@ def create_spark_session():
         .set("spark.sql.shuffle.partitions", "10")
     
     sc = SparkContext.getOrCreate(conf=conf)
-    # Création du SQLContext (optionnel car SparkSession fournit déjà ce service)
     sql_context = SQLContext(sc)
     spark = SparkSession(sc)
     return spark
@@ -58,7 +57,7 @@ def read_plane_data(spark, plane_schema, begin, end):
         .select(from_json(col("json_str"), plane_schema).alias("data")) \
         .select("data.*")
     
-    # Conversion du timestamp UNIX en type Timestamp (heure d'arrivée)
+    # Conversion du timestamp UNIX ("lastSeen") en type Timestamp (heure d'arrivée)
     plane_df = plane_df.withColumn("arrival_time", from_unixtime(col("lastSeen")).cast(TimestampType()))
     plane_df = plane_df.filter(col("lastSeen").between(begin, end))
     return plane_df
@@ -135,7 +134,7 @@ def main():
     plane_schema = define_plane_schema()
     bus_schema = define_bus_schema()
     
-    # Plage de timestamps UNIX pour les avions (par exemple, pour une journée spécifique)
+    # Plage de timestamps UNIX pour les avions (pour le 2025-03-17)
     begin = 1742166015
     end = 1742252385
     
